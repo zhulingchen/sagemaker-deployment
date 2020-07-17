@@ -25,6 +25,7 @@ def model_fn(model_dir):
 
     # Determine the device and construct the model.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device {}.".format(device))
     model = LSTMClassifier(model_info['embedding_dim'], model_info['hidden_dim'], model_info['vocab_size'])
 
     # Load the stored model parameters.
@@ -68,13 +69,32 @@ def train(model, train_loader, epochs, optimizer, loss_fn, device):
     """
     
     # TODO: Paste the train() method developed in the notebook here.
-
-    pass
+    for epoch in range(1, epochs + 1):
+        model.train()
+        total_loss = 0
+        for batch in train_loader:         
+            batch_X, batch_y = batch
+            
+            batch_X = batch_X.to(device)
+            batch_y = batch_y.to(device)
+            
+            # TODO: Complete this train method to train the model provided.
+            # zero the parameter gradients
+            optimizer.zero_grad()
+            
+            # forward + backward + optimize
+            forward_y = model(batch_X)
+            loss = loss_fn(forward_y, batch_y)
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.data.item()
+        print("Epoch: {}, BCELoss: {}".format(epoch, total_loss / len(train_loader)))
 
 
 if __name__ == '__main__':
-    # All of the model parameters and training parameters are sent as arguments when the script
-    # is executed. Here we set up an argument parser to easily access the parameters.
+    # All of the model parameters and training parameters are sent as arguments when the script is executed.
+    # Here we set up an argument parser to easily access the parameters.
 
     parser = argparse.ArgumentParser()
 
