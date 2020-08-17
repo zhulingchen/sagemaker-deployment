@@ -30,7 +30,7 @@ def input_handler(data, context):
     # print(os.system('pwd'))
     # print(os.system('ls -Rla ./'))
     # print(os.system('ls -Rla /opt/ml/model'))
-    word_dict_path = os.path.join('/opt/ml/model', 'word_dict.pkl')
+    word_dict_path = os.path.join('/opt/ml/model', 'word_dict.pkl')  # model is saved at /opt/ml/model of the deployed endpoint
     with open(word_dict_path, 'rb') as f:
         word_dict = pickle.load(f)
         
@@ -54,6 +54,7 @@ def input_handler(data, context):
     raise ValueError('{{"error": "unsupported content type {}"}}'.format(
         context.request_content_type or "unknown"))
 
+    
 def output_handler(data, context):
     """Post-process TensorFlow Serving output before it is returned to the client.
     Args:

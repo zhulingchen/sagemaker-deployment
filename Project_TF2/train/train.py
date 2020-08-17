@@ -10,23 +10,6 @@ from model import DCNN
 
 
 
-def model_fn(model_dir):
-    """Load the TensorFlow model from the `model_dir` directory."""
-    print("Loading model.")
-
-    # Determine the device and construct the model.
-    print("Is CUDA available?", tf.test.is_gpu_available())
-    model = tf.keras.models.load_model(os.path.join(model_dir, 'model', '1'))
-    model.summary()
-
-    # Load the saved word_dict.
-    word_dict_path = os.path.join(model_dir, 'word_dict.pkl')
-    with open(word_dict_path, 'rb') as f:
-        word_dict = pickle.load(f)
-    
-    return model
-
-
 def _get_train_ds(batch_size, training_dir):
     print("Get train dataset.")
 
@@ -92,14 +75,14 @@ if __name__ == '__main__':
     parser.add_argument('--hosts', type=list, default=json.loads(os.environ['SM_HOSTS']))
     parser.add_argument('--current-host', type=str, default=os.environ['SM_CURRENT_HOST'])
     parser.add_argument('--model_dir', type=str)
-    # TensorFlow 2 uses Script Mode
+    # TensorFlow 2 uses Script Mode so the trained model will be saved to the path defined in args.sm_model_dir
     # https://stackoverflow.com/questions/60190365/sagemaker-with-tensorflow-2-not-saving-model
     parser.add_argument('--sm-model-dir', type=str, default=os.environ['SM_MODEL_DIR'])
     parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
     parser.add_argument('--num-gpus', type=int, default=os.environ['SM_NUM_GPUS'])
 
     args = parser.parse_args()
-    print("args = ", args)
+    print("args =", args)
 
     print("Is CUDA available?", tf.test.is_gpu_available())
     
@@ -114,9 +97,6 @@ if __name__ == '__main__':
                  nb_filters=args.filter_number,
                  FFN_units=args.dense_units)
 
-    with open(os.path.join(args.data_dir, "word_dict.pkl"), "rb") as f:
-        word_dict = pickle.load(f)
-
     # Train the model.
     optimizer = tf.keras.optimizers.Adam()
     loss_fn = tf.keras.losses.BinaryCrossentropy()
@@ -124,12 +104,16 @@ if __name__ == '__main__':
     model.summary()
     print("Model is trained.")
 
-	# Save the word_dict
+    # Load the word_dict from the data directory
+    with open(os.path.join(args.data_dir, "word_dict.pkl"), "rb") as f:
+        word_dict = pickle.load(f)
+    
+	# Save the word_dict to the model directory
     word_dict_path = os.path.join(args.sm_model_dir, 'word_dict.pkl')
     with open(word_dict_path, 'wb') as f:
         pickle.dump(word_dict, f)
 
-	# Save the model
+	# Save the model to Tensorflow SavedModel
     # need a version number folder in the path
     # https://stackoverflow.com/questions/59882941/valueerror-no-savedmodel-bundles-found-when-trying-to-deploy-a-tf2-0-model-to
     model.predict(next(iter(train_ds))[0])
